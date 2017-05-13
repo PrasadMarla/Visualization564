@@ -1,0 +1,25 @@
+source,target,value
+Tom Brown,Denny Lemaster,1.2
+Denny Lemaster,Joe Nolan,0.7
+Joe Nolan,Denny Doyle,0.5
+Denny Doyle,Joe Nolan,0.9
+Jose Cardenal,Fritz Peterson,1.5
+Mike Ryan,Joe Nolan,0.6
+Fritz Peterson,Joe Nolan,,1.5
+Dick Bertell,Joe Nolan,0.2
+Rod Kanehl,Mike Ryan,,0.5
+Ozzie Osborn,Fritz Peterson,0.8
+John LaRose,Joe Nolan,1.2
+Jeff Byrd,Mike Ryan,,0.3
+Juan Bonilla,Joe Nolan,0.7
+Frank Tepedino,John LaRose,0.6
+Jerry Kutzler,Fritz Peterson,0.4
+Rick Wise,R,Mike Ryan,0.9
+Darrell Evans,John LaRose,0.2
+Buck Martinez,Fritz Peterson,1.5
+John Wockenfuss,Mike Ryan,1.8
+Tommy McCraw,Fritz Peterson,0.5
+Jeff Barkley,Mike Ryan,0.2
+Eric Wilkins,Mike Ryan,0.9
+Britt Burns,Fritz Peterson,0.1
+Lee Lacy,John LaRose,0.2

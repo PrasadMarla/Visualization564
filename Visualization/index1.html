@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+html
+{
+  -webkit-tap-highlight-color:green;
+}
+
+body {
+    margin: 0;
+	background-color:white;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 25%;
+    background-color: #f1f1f1;
+    position: fixed;
+    height: 100%;
+    overflow: auto;
+}
+
+li a {
+    display: block;
+    color: #000;
+    padding: 8px 16px;
+    text-decoration: none;
+}
+
+li a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+li a:hover:not(.active) {
+    background-color: #555;
+    color: white;
+}
+
+.d3-tip {
+        line-height: 1;
+        font-weight: bold;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: 2px;
+      }
+      .bar rect {
+        fill: steelblue;
+        shape-rendering: crispEdges;
+      }
+      .bar rect:hover{
+        fill: rgba(0,0,0,.8);
+      }
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+</style>
+</head>
+<body >
+
+<ul>
+  <li><a class="index1.html" href="#home">Home</a></li>
+  <li><a href="#height" onclick='myfunction("height")'>Height</a></li>
+  <li><a href="#weight" onclick='myfunction("weight")'>Weight</a></li>
+  <li><a href="#hr" onclick='myfunction("HR")'>HR</a></li> 
+  <li><a href="force.html">Force Directed</a></li>
+</ul>
+
+<div style="margin-left:25%;padding:1px 16px;height:2000px;">
+  <h2>Visualization Assignment 1</h2>
+  <h3>Data:BaseballData.csv </h3>
+   
+  <div id="contain" class="graph"></div>
+  <p align="center">
+  <button id = "binChange" style="background-color: #4CAF50"  type="button">(Reduce BinCounts) <------- DRAG -----> (Increse BinCounts)</button><br>
+  </p>
+</div>
+
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js">
+    </script>
+	 <script src="pie.js"></script>
+    <script>
+var svg ;
+//var binsize = 2;
+var binmargin = .2; 
+var mode = 0;
+var m = 1;
+var w = 900,//width
+    h = 900; 
+
+
+var renderData = {};
+var  id2 = "height";
+
+// Api for increasing/decreasing bins.
+
+function changeBinWidth(){
+	
+	d3.select("#binChange").on("mousedown", function() {
+  	
+  	var div = d3.select(this)
+	      	  .classed("active", true);
+
+	var xVal = d3.mouse(div.node())[0]
+	var win = d3.select(window)
+		      .on("mousemove", changeBin)
+		      .on("mouseup", function(){
+		      	div.classed("active", false);
+	    		win.on("mousemove", null).on("mouseup", null);
+		      });
+
+	  function changeBin() {
+	  	
+	   if(d3.mouse(div.node())[0] - 20 > xVal&& binRange < 8){
+	  		binRange += 1;
+	  		myfunction(id2);
+	  		xVal = d3.mouse(div.node())[0];
+	  	}
+		else if(d3.mouse(div.node())[0] + 20 < xVal && binRange > 2){
+	  		binRange -= 1;
+	  	    myfunction(id2);
+	  		xVal = d3.mouse(div.node())[0];
+	  	}
+	  }
+});	
+}
+
+
+/**
+This method is useful for handling menu changes
+*/
+function myfunction(id1)
+{
+ id2  = id1;
+//alert(id1);
+d3.csv("baseball_data.csv", parser,
+       function(error, csvdata) {
+	   buildData(csvdata,id1);
+	   if(mode==0)
+        drawHist(id1);
+		else
+		drawPie(id1);
+}); 
+}
+
+
+function parser(d) {
+    return d;
+}
+
+var binRange = 5;
+
+//  form data object  from .csv file
+function buildData(csvdata,id1){
+    var minbin, maxbin;
+    if(id1 == "height"){
+      minbin =  parseInt(d3.min(csvdata, function(d) { return d.height; }))-1;
+      maxbin =  parseInt(d3.max(csvdata, function(d) { return d.height; }))+1;
+    }
+    else if(id1 == "weight"){
+      minbin =  parseInt(d3.min(csvdata, function(d) { return d.weight; }))-1;
+      maxbin =  parseInt(d3.max(csvdata, function(d) { return d.weight; }))+1;
+    }
+    else if(id1 == "avg"){
+      minbin =  parseFloat(d3.min(csvdata, function(d) { return d.avg; }))-1;
+      maxbin =  parseFloat(d3.max(csvdata, function(d) { return d.avg; }))+1;
+    }
+    else if(id1 == "HR"){
+      minbin = parseInt(d3.min(csvdata, function(d) { return d.HR; }))-1;
+      maxbin = parseInt(d3.max(csvdata, function(d) { return d.HR; }))+1;
+    }
+
+	var numbins = Math.ceil((maxbin - minbin) / binRange);
+
+	histdata = new Array(numbins-1);
+    for (var i = 0; i < numbins-1; i++) {
+      rangeL = minbin + i*binRange  
+      rangeR = rangeL+binRange-1;
+    histdata[i] = { numfill: 0, meta: "data range :"+rangeL+"-"+rangeR };
+  }
+
+  // Fill histdata with y-axis values and meta data
+    csvdata.forEach(function(d) {
+      var bin;
+    if(id1 == "height")
+      bin = Math.ceil((d.height - minbin) / binRange);
+    else if(id1 == "weight")
+      bin = Math.ceil((d.weight - minbin) / binRange);
+    else if(id1 == "avg")
+      bin = Math.ceil((d.avg - minbin) / binRange);
+    else if(id1 == "HR")
+      bin = Math.ceil((d.HR - minbin) / binRange);
+
+    console.log("bin:" + bin + "id:" + id1);
+    if ((bin.toString() != "NaN") && (bin < histdata.length)) {
+      histdata[bin].numfill += 1;
+    }
+    });
+
+	  renderData.histData = histdata;
+	  renderData.min = minbin;
+	  renderData.max = maxbin;
+	  renderData.binsize = binRange;
+      renderData.numbins = numbins; 	  
+}
+
+// Histogram function.
+function drawHist(id1) {
+    
+    d3.select("#contain").selectAll("svg").remove();
+	/*var minbin = 64;
+    var maxbin = 78;*/
+    
+        //var numbins  = 7;
+    //Math.ceil((maxbin - minbin) / numbins);
+    //console.log("num" + numbins);
+    // whitespace on either side of the bars in units of contain
+    var minbin = renderData.min,
+	 maxbin = renderData.max;
+	var binRange = renderData.binsize;
+	var numbins = renderData.numbins;
+    var margin = {top: 10, right: 30, bottom: 50, left: 60};
+    var width = 650 - margin.left - margin.right;
+    var height = 450 - margin.top - margin.bottom;
+
+    // Set the limits of the x axis
+    var xmin = minbin - 2
+    var xmax = maxbin + 2
+    
+    // This scale is for determining the widths of the histogram bars
+    // Must start at 0 or else x(binsize) will be negative
+    var x = d3.scale.linear()
+    .domain([0, (xmax - xmin)])
+    .range([0, width]);
+
+    // Scale for the placement of the bars
+    var x2 = d3.scale.linear()
+    .domain([xmin, xmax])
+    .range([0, width]);
+  
+    var y = d3.scale.linear()
+    .domain([0, d3.max(histdata, function(d) { 
+            return d.numfill; 
+            })])
+    .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+    .scale(x2)
+    .orient("bottom");
+    var yAxis = d3.svg.axis()
+    .scale(y)
+    .ticks(8)
+    .orient("left");
+
+    var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .direction('e')
+    .offset([0, 20])
+    .html(function(d) {
+      return '<table id="tiptable">'+d.meta+"<br> Val : " +d.numfill +"</table>";
+  });
+  
+
+    // put the graph in the "contain" div
+    svg = d3.select("#contain").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("align","center")
+    .attr("transform", "translate(" + margin.left + "," + 
+            margin.top + ")");
+    svg.call(tip);
+    
+    var binsizeonscreen = width/numbins;
+    
+	// Add bars.
+	
+	var bar = svg.selectAll(".bar")
+    .data(histdata)
+    .enter().append("g")
+    .attr("class", "bar")
+    .attr("transform", function(d, i) { return "translate(" + 
+         x2( i * binRange+ minbin) + "," + y( d.numfill) + ")"; })
+    	.on('click',function(d){
+	     tip.hide(d);
+	   d3.select("#contain").selectAll("svg").remove();
+	        mode = 1;
+	       drawPie(id1);
+	  })
+    
+     //Add rectangles
+
+     bar.append("rect")
+    .attr("x", x(binmargin))
+    .attr("width", x(binRange - 2 * binmargin))
+    .attr("height", function(d) { return height - y(d.numfill); })
+    .style("fill", "orange")
+	.on('mouseover',function(d,i){
+	       tip.show(d);
+		    d3.select(this)
+                  .attr("y",d3.select(this).attr("y") - 15)
+                  .attr("height",parseInt(d3.select(this).attr("height")) + 15)
+                  .attr("x", x(binmargin)-5)
+                  .attr("width", x(binRange - 2 * binmargin)+10)
+		          .style("fill", "red");   
+	    })
+    .on('mouseout', function(d,i){
+	       tip.hide(d);
+		    d3.select(this)
+                  .attr("width", x(binRange - 2 * binmargin))
+                  .attr("y",parseInt(d3.select(this).attr("y")) + 15)
+                  .attr("x", x(binmargin))
+                  .attr("height", function(d) { return height - y(d.numfill); })
+		          .style("fill", "orange");
+	    })
+
+
+	
+
+    // add the x axis
+    svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+    svg.append("text")
+    .attr("class", "xlabel")
+    .attr("text-anchor", "middle")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom-1)
+    .text(id1);
+
+    // add the y axis 
+    svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(0,0)")
+    .call(yAxis);
+    svg.append("text")
+    .attr("class", "ylabel")
+    .attr("y", 0 - margin.left) 
+    .attr("x", 0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("transform", "rotate(-90)")
+    .style("text-anchor", "middle")
+    .text("Frequency");
+	
+	d3.select("#contain").attr("align","center");
+   
+}
+
+// Read in .csv data and make graph
+d3.csv("baseball_data.csv", parser,
+       function(error, csvdata) {
+	   buildData(csvdata,"height");
+	   mode = 0;
+     drawHist("height");
+}); 
+
+   changeBinWidth();
+
+    </script>
+    
+  </body>
+</html>

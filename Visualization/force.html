@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    margin: 0;
+	background-color: white;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 25%;
+    background-color: #f1f1f1;
+    position: fixed;
+    height: 100%;
+    overflow: auto;
+}
+
+li a {
+    display: block;
+    color: #000;
+    padding: 8px 16px;
+    text-decoration: none;
+}
+
+li a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+li a:hover:not(.active) {
+    background-color: #555;
+    color: white;
+}
+
+.d3-tip {
+        line-height: 1;
+        font-weight: bold;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: 2px;
+      }
+      .bar rect {
+        fill: steelblue;
+        shape-rendering: crispEdges;
+      }
+      .bar rect:hover{
+        fill: rgba(0,0,0,.8);
+      }
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+	  
+	  path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+circle {
+  fill: orange;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+text {
+  fill: blue;
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+	  
+</style>
+</head>
+
+
+<body>
+
+<ul> 
+  <li><a href="index1.html">GO BACK</a></li>
+</ul>
+ <div style="margin-left:25%;padding:1px 16px;height:2000px;">
+	<h2>Visualization Assignment 1</h2>
+  <h3>Data : Most Popular Baseball player based on number of friends</h3>
+   
+  <div id="contain" class="graph"></div>
+</div>
+
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+// get the data
+d3.csv("force.csv", function(error, links) {
+
+var nodes = {};
+
+// Compute the distinct nodes from the links.
+links.forEach(function(link) {
+    link.source = nodes[link.source] || 
+        (nodes[link.source] = {name: link.source});
+    link.target = nodes[link.target] || 
+        (nodes[link.target] = {name: link.target});
+    link.value = +link.value;
+});
+
+var width = 900,
+    height = 400;
+
+var forceGraph = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(links)
+    .size([width, height])
+    .linkDistance(60)
+    .charge(-300)
+    .on("tick", tick)
+    .start();
+
+var svg = d3.select("#contain").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// build the arrow.
+svg.append("svg:defs").selectAll("marker")
+    .data(["end"])
+  .enter().append("svg:marker")
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+// add the links and the arrows
+var path = svg.append("svg:g").selectAll("path")
+    .data(forceGraph.links())
+  .enter().append("svg:path")
+    .attr("class", "link")
+    .attr("marker-end", "url(#end)");
+
+// define the nodes
+var node = svg.selectAll(".node")
+    .data(forceGraph.nodes())
+  .enter().append("g")
+    .attr("class", "node")
+    .call(forceGraph.drag)
+	.on("click",function(){
+	//document.location.href = 'index1.html';
+	});
+
+// add the nodes
+node.append("circle")
+    .attr("r", 5);
+
+// add the text 
+node.append("text")
+    .attr("x", 12)
+    .attr("dy", ".35em")
+    .text(function(d) { return d.name; });
+
+// add the curvy lines
+function tick() {
+    path.attr("d", function(d) {
+        var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy-100);
+        return "M" + 
+            d.source.x + "," + 
+            d.source.y + "A" + 
+            dr + "," + dr + " 0 0,1 " + 
+            d.target.x + "," + 
+            d.target.y;
+    });
+    node.attr("transform", function(d) { 
+            return "translate(" + d.x + "," + d.y + ")"; });
+}
+
+});
+
+</script>
+</body>
+</html>
