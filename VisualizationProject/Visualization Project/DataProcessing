@@ -1,0 +1,101 @@
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from sklearn.decomposition import PCA # Principal Component Analysis module
+from sklearn.cluster import KMeans # KMeans clustering
+import matplotlib.pyplot as plt # Python defacto plotting library
+import seaborn as sns # More snazzy plotting library
+from sklearn import  linear_model
+import pycountry
+
+def data_process():
+    movie = pd.read_csv('movie_metadata.csv') # reads the csv and creates the dataframe called movie
+    buildDataForGeoMap(movie)
+    #print(movie)
+    #print(movie.groupby(['director_name']))
+    #movie_num = filterNumericColumns(movie)
+    #showStronglyCorrelatedVariables(movie_num)
+    #stdData = standardiseData(movie_num)
+    #visualizePrincipalCompnents(stdData)
+    #pcaPlot(stdData)
+    #print(stdData)
+
+
+
+def buildDataForGeoMap(movie):
+    res = movie.groupby(['country'])
+    res1 = pd.DataFrame()
+    res1['totalG'] = res.sum()['gross']
+    code =[]
+    c = {}
+    for countries in pycountry.countries:
+        c[countries.name] = countries.alpha_3,
+    print(c)
+    for row in res1.iterrows():
+        print(row)
+        code.append(c.get(row[0]))
+    print(code)
+    res1['code'] = code
+    res1.to_csv("geo.csv")
+
+def filterNumericColumns(movie):
+    str_list = []  # empty list to contain columns with strings (words)
+    for colname, colvalue in movie.iteritems():
+        if type(colvalue[1]) == str:
+            str_list.append(colname)
+    # Get to the numeric columns by inversion
+    num_list = movie.columns.difference(str_list)
+    movie_num = movie[num_list]
+    movie_num = movie_num.fillna(value=0, axis=1)
+    # del movie # Get rid of movie df as we won't need it now
+    return movie_num
+
+def showStronglyCorrelatedVariables(movie):
+    # Set up the matplotlib figure
+    f, ax = plt.subplots(figsize=(8, 8))
+    plt.title('Pearson Correlation of Movie Features')
+    # Draw the heatmap using seaborn
+    sns.heatmap(movie.astype(float).corr(), linewidths=0.25, vmax=1.0, square=True, cmap="YlGnBu",
+                linecolor='black')
+    plt.show()
+
+def standardiseData(movie):
+    X = movie.values
+    # Data Normalization
+    from sklearn.preprocessing import StandardScaler
+    X_std = StandardScaler().fit_transform(X)
+    return X_std
+
+def pcaPlot(stdMovie):
+    pca = PCA(n_components=9)
+    x_9d = pca.fit_transform(stdMovie)
+    plt.figure(figsize=(7, 7))
+    plt.scatter(x_9d[:, 0], x_9d[:, 1], c='goldenrod', alpha=0.5)
+    plt.ylim(-10, 30)
+    plt.show()
+
+def visualizePrincipalCompnents(stdMovie):
+    mean_vec = np.mean(stdMovie, axis=0)
+    cov_mat = np.cov(stdMovie.T)
+    eig_vals, eig_vecs = np.linalg.eig(cov_mat)
+    eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[:, i]) for i in range(len(eig_vals))]
+
+    # Sort from high to low
+    eig_pairs.sort(key=lambda x: x[0], reverse=True)
+
+    # Calculation of Explained Variance from the eigenvalues
+    tot = sum(eig_vals)
+    var_exp = [(i / tot) * 100 for i in sorted(eig_vals, reverse=True)]  # Individual explained variance
+    cum_var_exp = np.cumsum(var_exp)  # Cumulative explained variance
+    # PLOT OUT THE EXPLAINED VARIANCES SUPERIMPOSED
+    plt.figure(figsize=(8, 5))
+    plt.bar(range(16), var_exp, alpha=0.3333, align='center', label='individual explained variance', color='g')
+    plt.step(range(16), cum_var_exp, where='mid', label='cumulative explained variance')
+    plt.ylabel('Explained variance ratio')
+    plt.xlabel('Principal components')
+    plt.legend(loc='best')
+    plt.show()
+
+def main():
+    data_process()
+
+main()
